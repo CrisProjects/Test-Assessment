@@ -8,6 +8,40 @@ const AsertividadQuiz = () => {
 
   const [mostrarResultados, setMostrarResultados] = useState(false);
 
+  // Definición de grupos temáticos
+  const gruposPreguntas = {
+    autoexpresion: {
+      nombre: "Autoexpresión",
+      descripcion: "Capacidad para expresar opiniones y sentimientos",
+      preguntas: [1, 4, 7, 15, 20, 22, 24, 27, 29],
+    },
+    manejoConflictos: {
+      nombre: "Manejo de Conflictos",
+      descripcion: "Habilidad para manejar situaciones difíciles",
+      preguntas: [2, 3, 8, 11, 13, 19, 25, 30],
+    },
+    autoestima: {
+      nombre: "Autoestima",
+      descripcion: "Valoración personal y confianza en uno mismo",
+      preguntas: [6, 18, 26, 32, 36],
+    },
+    establecerLimites: {
+      nombre: "Establecimiento de Límites",
+      descripcion: "Capacidad para decir no y establecer límites saludables",
+      preguntas: [5, 12, 28, 33, 34],
+    },
+    comunicacionEfectiva: {
+      nombre: "Comunicación Efectiva",
+      descripcion: "Habilidades de comunicación clara y directa",
+      preguntas: [14, 16, 17, 21, 31],
+    },
+    relacionesInterpersonales: {
+      nombre: "Relaciones Interpersonales",
+      descripcion: "Manejo de relaciones con otros",
+      preguntas: [9, 10, 23, 35],
+    }
+  };
+
   const preguntas = [
     "Me siento incómodo cuando tengo que enfrentar a alguien para resolver un problema",
     "Pierdo la paciencia con facilidad, soy de 'mecha corta'",
@@ -60,17 +94,31 @@ const AsertividadQuiz = () => {
     }));
   };
 
+  const calcularPuntajePorGrupo = (grupo) => {
+    let total = 0;
+    grupo.preguntas.forEach(numPregunta => {
+      const valor = respuestas[`pregunta${numPregunta}`];
+      const preguntasInvertidas = [5, 6, 7, 11, 16, 20, 21, 24, 26, 27, 29, 30, 32];
+      
+      if (preguntasInvertidas.includes(numPregunta)) {
+        total += valor;
+      } else {
+        total += (4 - valor);
+      }
+    });
+    return (total / grupo.preguntas.length).toFixed(2);
+  };
+
   const calcularPuntajeTotal = () => {
     let total = 0;
     Object.entries(respuestas).forEach(([pregunta, valor]) => {
-      // Lista de preguntas donde 3 es positivo (invertidas)
       const preguntasInvertidas = [5, 6, 7, 11, 16, 20, 21, 24, 26, 27, 29, 30, 32];
       const numPregunta = parseInt(pregunta.replace('pregunta', ''));
       
       if (preguntasInvertidas.includes(numPregunta)) {
-        total += valor; // Para estas preguntas, mayor puntuación es mejor
+        total += valor;
       } else {
-        total += (4 - valor); // Para el resto, invertimos la puntuación
+        total += (4 - valor);
       }
     });
     return total;
@@ -97,10 +145,10 @@ const AsertividadQuiz = () => {
   };
 
   const prepararDatosGrafico = () => {
-    return Object.entries(respuestas).map(([pregunta, valor]) => ({
-      pregunta: `P${pregunta.replace('pregunta', '')}`,
-      valor: valor,
-      tooltipText: preguntas[parseInt(pregunta.replace('pregunta', '')) - 1]
+    return Object.entries(gruposPreguntas).map(([key, grupo]) => ({
+      nombre: grupo.nombre,
+      puntaje: calcularPuntajePorGrupo(grupo),
+      descripcion: grupo.descripcion
     }));
   };
 
@@ -109,10 +157,8 @@ const AsertividadQuiz = () => {
       return (
         <div className="bg-white p-4 shadow-lg rounded-lg border">
           <p className="font-bold">{label}</p>
-          <p className="text-sm">{payload[0]?.payload?.tooltipText}</p>
-          <p className="text-blue-600">Respuesta: {
-            opciones.find(opt => opt.valor === payload[0].value)?.texto
-          }</p>
+          <p className="text-sm">{payload[0]?.payload?.descripcion}</p>
+          <p className="text-blue-600">Puntaje promedio: {payload[0].value}</p>
         </div>
       );
     }
@@ -185,12 +231,22 @@ const AsertividadQuiz = () => {
                   margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="pregunta" />
+                  <XAxis dataKey="nombre" angle={-45} textAnchor="end" height={100} />
                   <YAxis domain={[0, 3]} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="valor" fill="#3B82F6" />
+                  <Bar dataKey="puntaje" fill="#3B82F6" />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {Object.entries(gruposPreguntas).map(([key, grupo]) => (
+                <div key={key} className="bg-gray-50 p-4 rounded-lg text-left">
+                  <h4 className="font-bold text-blue-600">{grupo.nombre}</h4>
+                  <p className="text-sm text-gray-600 mb-2">{grupo.descripcion}</p>
+                  <p className="font-medium">Puntaje: {calcularPuntajePorGrupo(grupo)}</p>
+                </div>
+              ))}
             </div>
 
             <button
